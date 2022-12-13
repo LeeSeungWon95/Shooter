@@ -18,6 +18,18 @@ enum class EItemRarity : uint8
 	EIR_MAX UMETA(Displayname = "DefaultMAX")
 };
 
+UENUM(BlueprintType)
+enum class EItemState : uint8
+{
+	EIS_Pickup UMETA(Displayname = "Pickup"),
+	EIS_EquipInterping UMETA(Displayname = "EquipInterping"),
+	EIS_PickedUp UMETA(Displayname = "PickedUp"),
+	EIS_Equipped UMETA(Displayname = "Equipped"),
+	EIS_Falling UMETA(Displayname = "Falling"),
+
+	EIS_MAX UMETA(Displayname = "DefaultMAX")
+};
+
 UCLASS()
 class SHOOTER_API AItem : public AActor
 {
@@ -51,6 +63,9 @@ protected:
 
 	/** Sets the ActiveStars array of bools based on rarity */
 	void SetActiveStars();
+
+	/** Sets properties of the Item's components based on State */
+	void SetItemProperties(EItemState State);
 
 public:	
 	// Called every frame
@@ -88,6 +103,15 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	TArray<bool> ActiveStars;
 
+	/** State of the Item */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	EItemState ItemState;
+
 public:
 	FORCEINLINE UWidgetComponent* GetPickUpWidget() const { return PickUpWidget; }
+	FORCEINLINE USphereComponent* GetAreaSphere() const { return AreaSphere; }
+	FORCEINLINE UBoxComponent* GetCollisionBox() const { return CollisionBox; }
+	FORCEINLINE EItemState GetItemState() const { return ItemState; }
+	void SetItemState(EItemState State);
+	FORCEINLINE USkeletalMeshComponent* GetItemMesh() const { return ItemMesh; }
 };
