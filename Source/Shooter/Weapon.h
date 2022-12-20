@@ -16,7 +16,7 @@ class SHOOTER_API AWeapon : public AItem
 
 public:
 	AWeapon();
-
+	/** Adds an impulse to the Weapon */
 	void ThrowWeapon();
 
 	virtual void Tick(float DeltaTime) override;
@@ -29,6 +29,13 @@ private:
 	float ThrowWeaponTime;
 	bool bFalling;
 
-public:
+	/** Ammo count for this Weapon */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
+	int32 Ammo;
 
+public:
+	FORCEINLINE int32 GetAmmo() const { return Ammo; }
+
+	/** Called from Character class when firing weapon */
+	void DecrementAmmo();
 };
