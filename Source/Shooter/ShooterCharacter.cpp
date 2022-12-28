@@ -87,6 +87,9 @@ AShooterCharacter::AShooterCharacter() :
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f); // ... at this rotation rate
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->AirControl = 0.2f;
+
+	// Create Hand Scene Component
+	HandSceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("HandSceneComponent"));
 }
 
 // Called when the game starts or when spawned
@@ -478,6 +481,10 @@ void AShooterCharacter::SelectButtonPressed()
 	if (TraceHitItem)
 	{
 		TraceHitItem->StartItemCurve(this);
+		if (TraceHitItem->GetPickupSound())
+		{
+			UGameplayStatics::PlaySound2D(this, TraceHitItem->GetPickupSound());
+		}
 	}
 }
 
@@ -624,6 +631,7 @@ void AShooterCharacter::FinishReloading()
 bool AShooterCharacter::CarryingAmmo()
 {
 	if (EquippedWeapon == nullptr) return false;
+	if (EquippedWeapon->GetAmmo() == EquippedWeapon->GetMagzineCapacity()) return false;
 
 	auto AmmoType = EquippedWeapon->GetAmmoType();
 	if (AmmoMap.Contains(AmmoType))
@@ -636,6 +644,7 @@ bool AShooterCharacter::CarryingAmmo()
 void AShooterCharacter::GrabClip()
 {
 	if (EquippedWeapon == nullptr) return;
+	if (HandSceneComponent == nullptr) return;
 
 	// Index for the clip bone on the Equipped Weapon
 	int32 ClipBoneIndex{ EquippedWeapon->GetItemMesh()->GetBoneIndex(EquippedWeapon->GetClipBoneName()) };
@@ -727,6 +736,10 @@ FVector AShooterCharacter::GetCameraInterpLocation()
 
 void AShooterCharacter::GetPickUpItem(AItem* Item)
 {
+	if (Item->GetEquipSound())
+	{
+		UGameplayStatics::PlaySound2D(this, Item->GetEquipSound());
+	}
 	auto Weapon = Cast<AWeapon>(Item);
 	if (Weapon)
 	{
