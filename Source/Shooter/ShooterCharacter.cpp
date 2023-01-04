@@ -580,7 +580,7 @@ void AShooterCharacter::ReloadWeapon()
 	if (EquippedWeapon == nullptr) return;
 
 	// Do we have ammo of the correct type?
-	if (CarryingAmmo())
+	if (CarryingAmmo() && !EquippedWeapon->ClipIsFull())
 	{
 		CombatState = ECombatState::ECS_Reloading;
 
@@ -631,7 +631,6 @@ void AShooterCharacter::FinishReloading()
 bool AShooterCharacter::CarryingAmmo()
 {
 	if (EquippedWeapon == nullptr) return false;
-	if (EquippedWeapon->GetAmmo() == EquippedWeapon->GetMagzineCapacity()) return false;
 
 	auto AmmoType = EquippedWeapon->GetAmmoType();
 	if (AmmoMap.Contains(AmmoType))
