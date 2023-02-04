@@ -15,6 +15,7 @@
 #include "Weapon.h"
 #include "Components/SphereComponent.h"
 #include "Components/BoxComponent.h"
+#include "Components/CapsuleComponent.h"
 
 // Sets default values
 AShooterCharacter::AShooterCharacter() :
@@ -60,7 +61,17 @@ AShooterCharacter::AShooterCharacter() :
 	Starting9mmAmmo(85),
 	StartingARAmmo(120),
 	// Combat variables
-	CombatState(ECombatState::ECS_Unoccupied)
+	CombatState(ECombatState::ECS_Unoccupied),
+	// Crouching
+	bCrouching(false),
+	BaseMovementSpeed(650.f),
+	CrouchMovementSpeed(300.f),
+	// Capsule Half Height
+	StandingCapsuleHalfHeight(88.f),
+	CrouchingCapsuleHalfHeight(44.f),
+	// Ground Friction
+	BaseGroundFriction(2.f),
+	CrouchingGroundFriction(100.f)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -70,7 +81,7 @@ AShooterCharacter::AShooterCharacter() :
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->TargetArmLength = 180.f; // The camera follows at this distance behind the character
 	CameraBoom->bUsePawnControlRotation = true; // Rotate cameraboom based on the controller
-	CameraBoom->SocketOffset = FVector(0.f, 50.f, 70.f);
+	CameraBoom->SocketOffset = FVector(0.f, 50.f, 45.f);
 
 	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
@@ -106,6 +117,8 @@ void AShooterCharacter::BeginPlay()
 	EquipWeapon(SpawnDefaultWeapon());
 
 	InitializeAmmoMap();
+
+	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
 }
 
 void AShooterCharacter::MoveForward(float Value)
@@ -662,6 +675,59 @@ void AShooterCharacter::ReleaseClip()
 	EquippedWeapon->SetMovingClip(false);
 }
 
+void AShooterCharacter::CrouchButtonPressed()
+{
+	if (!GetCharacterMovement()->IsFalling())
+	{
+		bCrouching = !bCrouching;
+	}
+
+	if (bCrouching)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = CrouchMovementSpeed;
+		GetCharacterMovement()->GroundFriction = CrouchingGroundFriction;
+	}
+	else
+	{
+		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+		GetCharacterMovement()->GroundFriction = BaseGroundFriction;
+	}
+}
+
+void AShooterCharacter::Jump()
+{
+	if (bCrouching)
+	{
+		bCrouching = false;
+	}
+	else
+	{
+		ACharacter::Jump();
+	}
+}
+
+void AShooterCharacter::InterpCapsuleHalfHeight(float DeltaTime)
+{
+	float TargetCapsuleHalfHeight{};
+	if (bCrouching)
+	{
+		TargetCapsuleHalfHeight = CrouchingCapsuleHalfHeight;
+	}
+	else
+	{
+		TargetCapsuleHalfHeight = StandingCapsuleHalfHeight;
+	}
+	const float InterpCapsuleHalfHeight{ FMath::FInterpTo(GetCapsuleComponent()->GetScaledCapsuleHalfHeight(),
+		TargetCapsuleHalfHeight, DeltaTime, 20.f) };
+
+	// Negative value if crouching; Positive value if standing
+	const float DeltaCapsuleHalfHeight{ InterpCapsuleHalfHeight - GetCapsuleComponent()->GetScaledCapsuleHalfHeight() };
+	const FVector MeshOffset{ 0.f, 0.f, -DeltaCapsuleHalfHeight };
+	GetMesh()->AddLocalOffset(MeshOffset);
+
+	GetCapsuleComponent()->SetCapsuleHalfHeight(InterpCapsuleHalfHeight);
+}
+
 // Called every frame
 void AShooterCharacter::Tick(float DeltaTime)
 {
@@ -676,6 +742,8 @@ void AShooterCharacter::Tick(float DeltaTime)
 	CalculateCrosshairSpread(DeltaTime);
 	// Check OverlappedItemCount, then trace for items
 	TraceForItems();
+	// Interpolate the capsule half height based on crouching/standing
+	InterpCapsuleHalfHeight(DeltaTime);
 }
 
 // Called to bind functionality to input
@@ -691,7 +759,7 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAxis("Turn", this, &AShooterCharacter::Turn);
 	PlayerInputComponent->BindAxis("LookUp", this, &AShooterCharacter::LookUp);
 
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AShooterCharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
 	PlayerInputComponent->BindAction("FireButton", IE_Pressed, this, &AShooterCharacter::FireButtonPressed);
@@ -704,6 +772,8 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("Select", IE_Released, this, &AShooterCharacter::SelectButtonReleased);
 
 	PlayerInputComponent->BindAction("ReloadButton", IE_Pressed, this, &AShooterCharacter::ReloadButtonPressed);
+
+	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &AShooterCharacter::CrouchButtonPressed);
 }
 
 float AShooterCharacter::GetCrosshairSpreadMultiplier() const

@@ -21,7 +21,10 @@ UShooterAnimInstance::UShooterAnimInstance() :
 	OffsetState(EOffsetState::EOS_Hip),
 	CharacterRotation(FRotator(0.f)),
 	CharacterRotationLastFrame(FRotator(0.f)),
-	YawDelta(0.f)
+	YawDelta(0.f),
+	bCrouching(false),
+	RecoilWeight(1.0f),
+	bTurningInPlace(false)
 {
 
 }
@@ -35,6 +38,8 @@ void UShooterAnimInstance::UpdateAnimationProperties(float DeltaTime)
 
 	if (ShooterCharacter)
 	{
+		bCrouching = ShooterCharacter->GetCrouching();
+
 		bReloading = ShooterCharacter->GetCombatState() == ECombatState::ECS_Reloading;
 
 		// Get the lateral speed of the character from velocity
@@ -119,6 +124,8 @@ void UShooterAnimInstance::TurnInPlace()
 		const float Turning{ GetCurveValue(TEXT("Turning")) };
 		if (Turning > 0)
 		{
+			bTurningInPlace = true;
+
 			RotationCurveLastFrame = RotationCurve;
 			RotationCurve = GetCurveValue(TEXT("Rotation"));
 			const float DeltaRotation{ RotationCurve - RotationCurveLastFrame };
@@ -131,6 +138,47 @@ void UShooterAnimInstance::TurnInPlace()
 			{
 				const float YawExcess{ ABSRootYawOffset - 90.f };
 				RootYawOffset > 0 ? RootYawOffset -= YawExcess : RootYawOffset += YawExcess;
+			}
+		}
+		else
+		{
+			bTurningInPlace = false;
+		}
+	}
+	// Set the Recoil Weight
+	if (bTurningInPlace)
+	{
+		if (bReloading)
+		{
+			RecoilWeight = 1.f;
+		}
+		else
+		{
+			RecoilWeight = 0.f;
+		}
+	}
+	else // not turning in place
+	{
+		if (bCrouching)
+		{
+			if (bReloading)
+			{
+				RecoilWeight = 1.f;
+			}
+			else
+			{
+				RecoilWeight = 0.1f;
+			}
+		}
+		else
+		{
+			if (bAiming || bReloading)
+			{
+				RecoilWeight = 1.f;
+			}
+			else
+			{
+				RecoilWeight = 0.5f;
 			}
 		}
 	}

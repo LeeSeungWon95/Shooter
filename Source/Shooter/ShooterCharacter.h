@@ -141,6 +141,13 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void ReleaseClip();
 
+	void CrouchButtonPressed();
+
+	virtual void Jump() override;
+
+	/** Interps capsule half height when crouching/standing */
+	void InterpCapsuleHalfHeight(float DeltaTime);
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -328,6 +335,37 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
 	USceneComponent* HandSceneComponent;
 
+	/** True when crouching */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	bool bCrouching;
+
+	/** Regular movement speed */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	float BaseMovementSpeed;
+
+	/** Crouch movement speed */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	float CrouchMovementSpeed;
+
+	/** Current half height of the capsule */
+	float CurrentCapsuleHalfHeight;
+
+	/** Half height of the capsule when not crouching */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	float StandingCapsuleHalfHeight;
+
+	/** Half height of the capsule when crouching */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	float CrouchingCapsuleHalfHeight;
+
+	/** Ground Friction while not crouching */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	float BaseGroundFriction;
+
+	/** Ground Friction while crouching */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	float CrouchingGroundFriction;
+
 public:
 	/** Returns Cameraboom subobject */
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
@@ -349,4 +387,6 @@ public:
 	void GetPickUpItem(AItem* Item);
 
 	FORCEINLINE ECombatState GetCombatState() const { return CombatState; }
+
+	FORCEINLINE bool GetCrouching() const { return bCrouching; }
 };
