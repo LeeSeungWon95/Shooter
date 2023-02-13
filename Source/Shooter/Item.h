@@ -30,6 +30,17 @@ enum class EItemState : uint8
 	EIS_MAX UMETA(Displayname = "DefaultMAX")
 };
 
+UENUM(BlueprintType)
+enum class EItemType : uint8
+{
+	EIT_Ammo UMETA(Displayname = "Ammo"),
+	EIT_Weapon UMETA(Displayname = "Weapon"),
+
+	EIT_MAX UMETA(Displayname = "DefaultMAX")
+};
+
+
+
 UCLASS()
 class SHOOTER_API AItem : public AActor
 {
@@ -72,6 +83,9 @@ protected:
 
 	/** Handles item interpolation when in the EquipInterping state */
 	void ItemInterp(float DeltaTime);
+
+	/** Get interp location based on the item type */
+	FVector GetInterpLocation();
 
 public:	
 	// Called every frame
@@ -156,6 +170,14 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	USoundCue* EquipSound;
 
+	/** Enum for the type of item this Item is */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	EItemType ItemType;
+
+	/** Index of the interp location this item is interping to */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	int32 InterpLocIndex;
+
 public:
 	FORCEINLINE UWidgetComponent* GetPickUpWidget() const { return PickUpWidget; }
 	FORCEINLINE USphereComponent* GetAreaSphere() const { return AreaSphere; }
@@ -166,6 +188,7 @@ public:
 	FORCEINLINE USoundCue* GetPickupSound() const { return PickupSound; }
 	FORCEINLINE USoundCue* GetEquipSound() const { return EquipSound; }
 	FORCEINLINE int32 GetItemCount() const { return ItemCount; }
+	FORCEINLINE EItemType GetItemType() const { return ItemType; }
 
 	/** Called from the AShooterCharacter class */
 	void StartItemCurve(AShooterCharacter* Char);
